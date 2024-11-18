@@ -70,7 +70,9 @@ where
                 return;
             }
 
-            self.sorted_keys.retain(|&x| x != key);
+            if let Ok(found) = self.sorted_keys.binary_search(&key) {
+                self.sorted_keys.remove(found);
+            }
         }
     }
 
