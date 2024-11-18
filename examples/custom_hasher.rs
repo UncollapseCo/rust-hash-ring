@@ -1,7 +1,9 @@
 extern crate hash_ring;
 
 use hash_ring::HashRing;
-use hash_ring::NodeInfo;
+use std::fmt;
+use std::fmt::Display;
+use std::fmt::Formatter;
 use std::hash::BuildHasherDefault;
 use std::hash::Hasher;
 
@@ -18,60 +20,56 @@ impl Hasher for ConstantHasher {
     }
 
     fn finish(&self) -> u64 {
-        return 1;
+        1
     }
 }
 
 type ConstantBuildHasher = BuildHasherDefault<ConstantHasher>;
 
+#[derive(Clone, Debug, PartialEq, Hash)]
+struct NodeInfo {
+    host: &'static str,
+    port: u16,
+}
+
+impl Display for NodeInfo {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
+        write!(f, "{}:{}", self.host, self.port)
+    }
+}
+
 fn main() {
-    let mut nodes: Vec<NodeInfo> = Vec::new();
-    nodes.push(NodeInfo {
-        host: "localhost",
-        port: 15324,
-    });
-    nodes.push(NodeInfo {
-        host: "localhost",
-        port: 15325,
-    });
-    nodes.push(NodeInfo {
-        host: "localhost",
-        port: 15326,
-    });
-    nodes.push(NodeInfo {
-        host: "localhost",
-        port: 15327,
-    });
-    nodes.push(NodeInfo {
-        host: "localhost",
-        port: 15328,
-    });
-    nodes.push(NodeInfo {
-        host: "localhost",
-        port: 15329,
-    });
+    let nodes = vec![
+        NodeInfo {
+            host: "localhost",
+            port: 15324,
+        },
+        NodeInfo {
+            host: "localhost",
+            port: 15325,
+        },
+        NodeInfo {
+            host: "localhost",
+            port: 15326,
+        },
+        NodeInfo {
+            host: "localhost",
+            port: 15327,
+        },
+        NodeInfo {
+            host: "localhost",
+            port: 15328,
+        },
+    ];
 
     let hash_ring: HashRing<NodeInfo, ConstantBuildHasher> =
         HashRing::with_hasher(nodes, 10, ConstantBuildHasher::default());
 
-    println!(
-        "Key: '{}', Node: {}",
-        "hello",
-        hash_ring.get_node(("hello").to_string()).unwrap()
-    );
-    println!(
-        "Key: '{}', Node: {}",
-        "dude",
-        hash_ring.get_node(("dude").to_string()).unwrap()
-    );
-    println!(
-        "Key: '{}', Node: {}",
-        "martian",
-        hash_ring.get_node(("martian").to_string()).unwrap()
-    );
-    println!(
-        "Key: '{}', Node: {}",
-        "tardis",
-        hash_ring.get_node(("tardis").to_string()).unwrap()
-    );
+    for key in &["hello", "dude", "martian", "tardis"] {
+        println!(
+            "Key: '{}', Node: {}",
+            key,
+            hash_ring.get_node(&key).unwrap()
+        );
+    }
 }
