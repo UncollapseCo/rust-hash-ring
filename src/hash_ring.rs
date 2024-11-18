@@ -4,6 +4,7 @@ use std::hash::BuildHasher;
 use std::hash::BuildHasherDefault;
 use std::hash::Hash;
 use std::hash::Hasher;
+use std::mem;
 use twox_hash::XxHash64;
 
 type XxHash64Hasher = BuildHasherDefault<XxHash64>;
@@ -45,31 +46,31 @@ where
 
     /// Adds a node to the hash ring
     pub fn add_node(&mut self, node: &T) {
+        let mut temp = vec![];
+
+        mem::swap(&mut temp, &mut self.sorted_keys);
+
+        let mut heap = BinaryHeap::from(temp);
+
         for i in 0..self.replicas {
             let key = self.gen_key((node, i));
             self.ring.insert(key, (*node).clone());
-            self.sorted_keys.push(key);
+            heap.push(key);
         }
 
-        self.sorted_keys = BinaryHeap::from(self.sorted_keys.clone()).into_sorted_vec();
+        self.sorted_keys = heap.into_sorted_vec();
     }
 
     /// Deletes a node from the hash ring
     pub fn remove_node(&mut self, node: &T) {
         for i in 0..self.replicas {
             let key = self.gen_key((node, i));
-            if !self.ring.contains_key(&key) {
+
+            if self.ring.remove(&key).is_none() {
                 return;
             }
-            self.ring.remove(&key);
-            let mut index = 0;
-            for j in 0..self.sorted_keys.len() {
-                if self.sorted_keys[j] == key {
-                    index = j;
-                    break;
-                }
-            }
-            self.sorted_keys.remove(index);
+
+            self.sorted_keys.retain(|&x| x != key);
         }
     }
 
